@@ -1,5 +1,3 @@
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-
 # Читает все непустые строки из текстового файла, удаляя символы новой строки
 def read_file(name):
     try:
@@ -28,6 +26,14 @@ def to_int(s):
 # Переводит строку в нижний регистр (русский и английский).
 def lower_str(s):
     return s.lower()
+
+
+# Форматирует ФИО: с отчеством — "Иванов И.И.", без — "Петрова А."
+def format_fio(a):
+    fio = a['fam'] + " " + a['im'][0] + "."
+    if a['otch'].strip():
+        fio += a['otch'][0] + "."
+    return fio
 
 
 # Шейкерная сортировка списка по ключу
@@ -60,7 +66,7 @@ def shaker_sort(arr, key_func):
         left += 1
 
 
-#Проверка даты
+# Проверка даты
 
 # Проверяет, является ли год високосным.
 def is_leap_year(year):
@@ -90,7 +96,7 @@ def is_valid_date(year, month, day):
     return True
 
 
-#Загрузка и сохарненеи файла
+# Загрузка и сохранение файла
 
 # Проверяет корректность данных одного соискателя. Возвращает словарь или None.
 def validate_applicant(data, line_num):
@@ -99,6 +105,10 @@ def validate_applicant(data, line_num):
         return None
 
     fam, im, otch, pol, y, m, d, spec, staj, lang, oklad = data
+
+    if not fam.strip() or not im.strip():
+        print(f"Строка {line_num}: фамилия и имя обязательны")
+        return None
 
     if pol not in ('М', 'Ж'):
         print(f"Строка {line_num}: пол должен быть 'М' или 'Ж'")
@@ -125,7 +135,7 @@ def validate_applicant(data, line_num):
     return {
         'fam': fam,
         'im': im,
-        'otch': otch,
+        'otch': otch,  # может быть пустой строкой
         'pol': pol,
         'year': year,
         'month': month,
@@ -166,7 +176,7 @@ def save_to_file(filename, applicants):
         print(f"Ошибка при сохранении: {e}")
 
 
-# Функции для управления и базы данных
+# Функции для управления базой данных
 
 applicants = []
 
@@ -176,13 +186,14 @@ def add_record():
     print("\n Добавление нового соискателя:")
     fam = input("Фамилия: ").strip()
     im = input("Имя: ").strip()
-    otch = input("Отчество: ").strip()
+    otch = input("Отчество (если есть): ").strip()
 
-    while not (fam and im and otch):
-        print("ФИО не может быть пустым.")
+    while not (fam and im):
+        print("Фамилия и имя обязательны.")
         fam = input("Фамилия: ").strip()
         im = input("Имя: ").strip()
-        otch = input("Отчество: ").strip()
+        if not otch:
+            otch = input("Отчество (если есть): ").strip()
 
     pol = input("Пол (М/Ж): ").strip()
     while pol not in ('М', 'Ж'):
@@ -240,118 +251,147 @@ def add_record():
         'lang': lang,
         'oklad': salary
     })
-    print(f"Добавлен: {fam} {im[0]}.{otch[0]}. ({day:02d}.{month:02d}.{year})")
+    fio_display = format_fio(applicants[-1])
+    print(f"Добавлен: {fio_display} ({day:02d}.{month:02d}.{year})")
 
-# Печатает отчёт в компактном формате (без даты рождения).
+
+# Печатает отчёт в компактном формате (без даты рождения) с нумерацией.
 def print_report(lst):
     if not lst:
         print("Нет данных")
         return
-    print("-" * 85)
-    print(f"{'ФИО':<20} {'Пол':<4} {'Специальность':<15} {'Стаж':<6} {'Оклад':<10} {'Языки'}")
-    print("-" * 85)
-    for a in lst:
-        fio = a['fam'] + " " + a['im'][0] + "." + a['otch'][0] + "."
-        print(f"{fio:<20} {a['pol']:<4} {a['spec']:<15} {a['staj']:<6} {a['oklad']:<10} {a['lang']}")
+    print("-" * 90)
+    print(f"{'№':<3} {'ФИО':<20} {'Пол':<4} {'Специальность':<15} {'Стаж':<6} {'Оклад':<10} {'Языки'}")
+    print("-" * 90)
+    for idx, a in enumerate(lst, start=1):
+        fio = format_fio(a)
+        print(f"{idx:<3} {fio:<20} {a['pol']:<4} {a['spec']:<15} {a['staj']:<6} {a['oklad']:<10} {a['lang']}")
 
 
-# Отображает всю базу соискателей в табличном виде.
+# Отображает всю базу соискателей в табличном виде с нумерацией.
 def show_all():
     if not applicants:
         print("База пуста.")
         return
     print("\n Вся база:")
-    print("-" * 95)
-    print(f"{'ФИО':<20} {'Пол':<4} {'Дата рожд.':<12} {'Специальность':<15} {'Стаж':<6} {'Оклад':<10} {'Языки'}")
-    print("-" * 95)
-    for a in applicants:
-        fio = a['fam'] + " " + a['im'][0] + "." + a['otch'][0] + "."
+    print("-" * 100)
+    print(f"{'№':<3} {'ФИО':<20} {'Пол':<4} {'Дата рожд.':<12} {'Специальность':<15} {'Стаж':<6} {'Оклад':<10} {'Языки'}")
+    print("-" * 100)
+    for idx, a in enumerate(applicants, start=1):
+        fio = format_fio(a)
         birth = f"{a['day']:02d}.{a['month']:02d}.{a['year']}"
-        print(f"{fio:<20} {a['pol']:<4} {birth:<12} {a['spec']:<15} {a['staj']:<6} {a['oklad']:<10} {a['lang']}")
+        print(f"{idx:<3} {fio:<20} {a['pol']:<4} {birth:<12} {a['spec']:<15} {a['staj']:<6} {a['oklad']:<10} {a['lang']}")
 
 
-# Удаляет запись по фамилии или номеру
+# Удаляет запись по фамилии или по номеру в списке
 def delete_record():
     if not applicants:
         print("База пуста.")
         return
     show_all()
-    choice = input("Введите фамилию записи: ").strip()
+    choice = input("Введите номер записи или фамилию для удаления: ").strip()
+    
+    # Попробуем интерпретировать как номер
     idx = to_int(choice)
     if idx is not None and 1 <= idx <= len(applicants):
         deleted = applicants.pop(idx - 1)
-        print(f"Удалён: {deleted['fam']} {deleted['im'][0]}.{deleted['otch'][0]}.")
+        fio_display = format_fio(deleted)
+        print(f"Удалён: {fio_display}")
         return
+
+    # Иначе — ищем по фамилии
     for i, a in enumerate(applicants):
         if a['fam'] == choice:
             deleted = applicants.pop(i)
-            print(f"Удалён: {deleted['fam']} {deleted['im'][0]}.{deleted['otch'][0]}.")
+            fio_display = format_fio(deleted)
+            print(f"Удалён: {fio_display}")
             return
+
     print("Запись не найдена.")
 
 
-# Редактирует существующую запись по фамилии
+# Редактирует запись по фамилии или по номеру в списке
 def edit_record():
     if not applicants:
         print("База пуста.")
         return
-    fam_to_edit = input("Фамилия для редактирования: ").strip()
-    for a in applicants:
-        if a['fam'] == fam_to_edit:
-            print(f"\nТекущие данные: {a['fam']} {a['im'][0]}.{a['otch'][0]}. | {a['spec']} | {a['staj']} лет | {a['oklad']} руб.")
-            
-            a['fam'] = input(f"Новая фамилия ({a['fam']}): ").strip() or a['fam']
-            a['im'] = input(f"Новое имя ({a['im']}): ").strip() or a['im']
-            a['otch'] = input(f"Новое отчество ({a['otch']}): ").strip() or a['otch']
+    show_all()
+    choice = input("Введите номер записи или фамилию для редактирования: ").strip()
 
-            new_pol = input(f"Новый пол ({a['pol']}): ").strip()
-            if new_pol in ('М', 'Ж'):
-                a['pol'] = new_pol
-
-            # Редактирование даты с проверкой
-            print(f"\nТекущая дата: {a['day']:02d}.{a['month']:02d}.{a['year']}")
-            while True:
-                new_y = input(f"Новый год ({a['year']}): ").strip()
-                new_m = input(f"Новый месяц ({a['month']}): ").strip()
-                new_d = input(f"Новый день ({a['day']}): ").strip()
-
-                year = to_int(new_y) if new_y else a['year']
-                month = to_int(new_m) if new_m else a['month']
-                day = to_int(new_d) if new_d else a['day']
-
-                if None in (year, month, day):
-                    print("Все части даты должны быть целыми числами.")
-                    continue
-
-                if is_valid_date(year, month, day):
-                    a['year'], a['month'], a['day'] = year, month, day
-                    break
-                else:
-                    print("Некорректная дата! Попробуйте снова.")
-
-            new_spec = input(f"Новая специальность ({a['spec']}): ").strip()
-            if new_spec:
-                a['spec'] = lower_str(new_spec)
-
-            new_staj = input(f"Новый стаж ({a['staj']}): ").strip()
-            if new_staj:
-                val = to_int(new_staj)
-                if val is not None and val >= 0:
-                    a['staj'] = val
-
-            new_oklad = input(f"Новый оклад ({a['oklad']}): ").strip()
-            if new_oklad:
-                val = to_int(new_oklad)
-                if val is not None and val >= 0:
-                    a['oklad'] = val
-
-            a['lang'] = input(f"Новые языки ({a['lang']}): ").strip() or a['lang']
-            print("Запись обновлена.")
+    # Попробуем интерпретировать как номер
+    if choice.isdigit():
+        idx = int(choice)
+        if 1 <= idx <= len(applicants):
+            a = applicants[idx - 1]
+            print(f"\nРедактирование записи №{idx}: {format_fio(a)}")
+        else:
+            print("Номер вне диапазона.")
             return
-    print("Запись не найдена.")
+    else:
+        # Ищем по фамилии
+        a = None
+        for applicant in applicants:
+            if applicant['fam'] == choice:
+                a = applicant
+                break
+        if a is None:
+            print("Запись не найдена.")
+            return
+        print(f"\nРедактирование: {format_fio(a)}")
+
+    # Редактируем запись `a`
+    a['fam'] = input(f"Новая фамилия ({a['fam']}): ").strip() or a['fam']
+    a['im'] = input(f"Новое имя ({a['im']}): ").strip() or a['im']
+    new_otch = input(f"Новое отчество ({a['otch']}): ").strip()
+    if new_otch != "":
+        a['otch'] = new_otch
+
+    new_pol = input(f"Новый пол ({a['pol']}): ").strip()
+    if new_pol in ('М', 'Ж'):
+        a['pol'] = new_pol
+
+    # Редактирование даты с проверкой
+    print(f"\nТекущая дата: {a['day']:02d}.{a['month']:02d}.{a['year']}")
+    while True:
+        new_y = input(f"Новый год ({a['year']}): ").strip()
+        new_m = input(f"Новый месяц ({a['month']}): ").strip()
+        new_d = input(f"Новый день ({a['day']}): ").strip()
+
+        year = to_int(new_y) if new_y else a['year']
+        month = to_int(new_m) if new_m else a['month']
+        day = to_int(new_d) if new_d else a['day']
+
+        if None in (year, month, day):
+            print("Все части даты должны быть целыми числами.")
+            continue
+
+        if is_valid_date(year, month, day):
+            a['year'], a['month'], a['day'] = year, month, day
+            break
+        else:
+            print("Некорректная дата! Попробуйте снова.")
+
+    new_spec = input(f"Новая специальность ({a['spec']}): ").strip()
+    if new_spec:
+        a['spec'] = lower_str(new_spec)
+
+    new_staj = input(f"Новый стаж ({a['staj']}): ").strip()
+    if new_staj:
+        val = to_int(new_staj)
+        if val is not None and val >= 0:
+            a['staj'] = val
+
+    new_oklad = input(f"Новый оклад ({a['oklad']}): ").strip()
+    if new_oklad:
+        val = to_int(new_oklad)
+        if val is not None and val >= 0:
+            a['oklad'] = val
+
+    a['lang'] = input(f"Новые языки ({a['lang']}): ").strip() or a['lang']
+    print("Запись обновлена.")
 
 
-#отчеты
+# Отчёты
 def generate_reports():
     if not applicants:
         print("База пуста.")
@@ -399,7 +439,7 @@ def input_num(prompt):
         print("Введите целое неотрицательное число.")
 
 
-# меню программы
+# Меню программы
 def main_menu():
     print("=" * 60)
     print("КАДРОВОЕ АГЕНТСТВО")
@@ -435,8 +475,7 @@ def main_menu():
             print("Неверный выбор.")
 
 
-
-#загрузка данных и запуск меню
+# Загрузка данных и запуск меню
 if __name__ == "__main__":
     applicants = load_from_file("soiskateli.txt")
     print(f"Загружено {len(applicants)} записей из файла 'soiskateli.txt'.")
